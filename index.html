@@ -236,7 +236,7 @@ function patronRender(){
   <main class="wrap">
     <h2 class="dayhead">${DAYS_LONG[P.day]}, ${shortDate(dayDate)}</h2>
     <div class="legend"><span><span class="dot"></span>Training plan</span><span><span class="dot o"></span>My activity</span></div>
-    ${d.notes && P.day===0 ? `<div class="note">${esc(d.notes)}</div>` : ''}
+    ${d.notes ? `<div class="note"><div class="flab">This week</div>${esc(d.notes)}</div>` : ''}
     <div class="list">
       ${dayEx.map((e,i)=>`<button class="item" data-ex="${d.exercises.indexOf(e)}"><span class="dot"></span><span class="txt"><span class="t">${esc(e.what)}</span><span class="m">${esc([e.type_time,e.eq].filter(Boolean).join(', '))}</span></span>${icon.right}</button>`).join('')}
       ${dayActs.map(a=>`<div class="item act"><span class="dot o"></span><span class="txt"><span class="t">${esc(a.activity)}</span><span class="m">${esc([a.action,a.duration].filter(Boolean).join(', '))}</span></span><span class="tag">You logged</span></div>`).join('')}
@@ -389,7 +389,7 @@ function renderTrainer(){
       <button class="btn ghost" id="addEx" style="margin-top:12px">Add exercise</button>
     </section>
     <section class="panel"><h3>Week notes</h3>
-      <textarea id="notes" placeholder="Shows at the top of Monday on their page">${esc(T.weekRow?.notes || '')}</textarea>
+      <textarea id="notes" placeholder="Shows at the top of every day on their page">${esc(T.weekRow?.notes || '')}</textarea>
       <button class="btn small" id="saveNotes" style="margin-top:8px">Save notes</button>
     </section>
     <section class="panel"><h3>Their activity this week</h3>
