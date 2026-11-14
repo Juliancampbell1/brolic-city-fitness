@@ -133,7 +133,16 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const LOGO_URL = ''; // logo goes here once it's added
 const BUSINESS = 'Brolic City Fitness';
 
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+/* Trainer key: comes from the private trainer link (#k=...) and is remembered on this device */
+const KEY_STORE = 'bcf_trainer_key';
+let TRAINER_KEY = '';
+try {
+  const fromLink = new URLSearchParams(location.hash.slice(1)).get('k');
+  if (fromLink) localStorage.setItem(KEY_STORE, fromLink);
+  TRAINER_KEY = fromLink || localStorage.getItem(KEY_STORE) || '';
+} catch { TRAINER_KEY = new URLSearchParams(location.hash.slice(1)).get('k') || ''; }
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY,
+  TRAINER_KEY ? { global: { headers: { 'x-trainer-key': TRAINER_KEY } } } : {});
 const app = document.getElementById('app');
 const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const DAYS_LONG = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
@@ -305,36 +314,17 @@ function addActivitySheet(){
 const T = { patrons:[], patronId:null, week:mondayOf(new Date()), day:dayIndex(new Date()), weekRow:null, exercises:[], acts:[], vocab:[] };
 
 async function trainerStart(){
-  const { data:{ session } } = await sb.auth.getSession();
-  if (!session) return renderSignIn();
-  const { data: ok } = await sb.rpc('is_trainer');
-  if (!ok){
-    app.innerHTML = `<div class="signin">${logoHtml(true)}<h1>${BUSINESS}</h1><div class="card"><h2>Not set up as trainer yet</h2>
-      <p>You're signed in as ${esc(session.user.email)}, but this account doesn't have trainer access yet.</p>
-      <button class="btn ghost" id="out">Sign out</button></div></div>`;
-    document.getElementById('out').onclick = async () => { await sb.auth.signOut(); renderSignIn(); };
-    return;
-  }
+  const { data: ok } = TRAINER_KEY ? await sb.rpc('is_trainer') : { data:false };
+  if (!ok) return renderLocked();
   const v = await sb.from('joint_actions').select('term'); T.vocab = (v.data||[]).map(r=>r.term);
   await loadPatrons(); renderTrainer();
 }
 
-function renderSignIn(){
-  app.innerHTML = `<div class="signin">${logoHtml(true)}<h1>${BUSINESS}</h1><div class="sub" style="margin-top:6px">Trainer sign in</div>
-    <form class="card" id="si"><h2>Welcome back</h2>
-      <div class="field"><label for="em">Email</label><input id="em" type="email" autocomplete="username" required></div>
-      <div class="field"><label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password" required></div>
-      <p class="err" id="siErr" role="alert"></p>
-      <button class="btn" type="submit" id="siBtn">Sign in</button>
-    </form></div>`;
-  document.getElementById('si').onsubmit = async ev => {
-    ev.preventDefault();
-    const btn = document.getElementById('siBtn'); btn.disabled = true;
-    const { error } = await sb.auth.signInWithPassword({ email: document.getElementById('em').value.trim(), password: document.getElementById('pw').value });
-    btn.disabled = false;
-    if (error){ document.getElementById('siErr').textContent = 'That email and password didn\u2019t match. Try again.'; return; }
-    trainerStart();
-  };
+function renderLocked(){
+  app.innerHTML = `<div class="signin">${logoHtml(true)}<h1>${BUSINESS}</h1><div class="sub" style="margin-top:6px">Personal / Holistic Training</div>
+    <div class="card"><h2>Looking for your page?</h2>
+      <p>Patrons: open the private link your trainer sent you.</p>
+      <p class="hint" style="margin:0">Trainer: open your private trainer link.</p></div></div>`;
 }
 
 async function loadPatrons(){
@@ -366,7 +356,7 @@ function renderTrainer(){
   app.innerHTML = `
   <header class="top"><div class="wrap">
     <div class="row" style="justify-content:space-between"><div class="row">${logoHtml()}<div><div class="hello" style="font-size:22px">Trainer</div><div class="sub">Only you see this page</div></div></div>
-    <button class="btn small ghost" id="out" style="border-color:#fff;color:#fff">Sign out</button></div>
+    <button class="btn small ghost" id="out" style="border-color:#fff;color:#fff">Forget this device</button></div>
   </div></header>
   <main class="wrap" style="padding-bottom:40px">
     <section class="panel"><h3>Patron</h3>
@@ -407,7 +397,11 @@ function renderTrainer(){
     </section>` : ''}
   </main>`;
 
-  document.getElementById('out').onclick = async () => { await sb.auth.signOut(); renderSignIn(); };
+  document.getElementById('out').onclick = () => {
+    if (!confirm('Remove trainer access from this device? You\u2019ll need your trainer link to get back in.')) return;
+    try { localStorage.removeItem(KEY_STORE); } catch {}
+    location.href = location.origin + location.pathname;
+  };
   document.getElementById('addP').onclick = async () => {
     const n = document.getElementById('newName').value.trim(); if (!n) return;
     const { data, error } = await sb.from('patrons').insert({ full_name:n }).select().single();
