@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#13294B">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Brolic City">
+<title>Brolic City Fitness</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<style>
+:root{
+  --blue:#13294B; --blue-2:#23395E; --blue-line:#3A4E70; --blue-soft:#C8D3E6;
+  --orange:#FF5F05; --orange-soft:#FFE9DC;
+  --ground:#F3F5F9; --card:#FFFFFF; --ink:#13294B; --muted:#4A5A75; --line:#B8C3D6;
+  --danger:#A3200A;
+  color-scheme: light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:16px;line-height:1.45;-webkit-text-size-adjust:100%}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--blue);z-index:10}
+h1,h2,h3{font-family:"Space Grotesk",Inter,system-ui,sans-serif;margin:0;line-height:1.15}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
+.wrap{max-width:560px;margin:0 auto}
+.hidden{display:none !important}
+
+/* header */
+.top{background:var(--blue);color:#fff;padding:22px 20px 18px}
+.top .row{display:flex;align-items:center;gap:12px}
+.logo{width:46px;height:46px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;border:2px solid var(--orange);font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:14px;color:#fff;overflow:hidden;background:var(--blue)}
+.logo img{width:100%;height:100%;object-fit:cover}
+.logo.big{width:120px;height:120px;font-size:30px}
+.hello{font-size:26px;font-weight:700}
+.sub{font-size:14px;color:var(--blue-soft)}
+.weeknav{display:flex;align-items:center;justify-content:space-between;margin-top:16px;gap:8px}
+.iconbtn{width:44px;height:44px;border-radius:50%;border:0;background:var(--blue-2);color:#fff;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.iconbtn.light{background:var(--ground);color:var(--ink)}
+.weeklabel{font-weight:600;font-size:16px;text-align:center}
+.days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-top:14px}
+.day{height:58px;border-radius:14px;border:1px solid var(--blue-line);background:transparent;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0;gap:1px;position:relative}
+.day small{font-size:12px;color:var(--blue-soft)}
+.day b{font-size:17px}
+.day[aria-pressed="true"]{background:var(--orange);border-color:var(--orange);color:var(--blue)}
+.day[aria-pressed="true"] small{color:var(--blue)}
+.day .pip{position:absolute;bottom:6px;width:5px;height:5px;border-radius:50%;background:var(--blue-soft)}
+.day[aria-pressed="true"] .pip{background:var(--blue)}
+
+/* content */
+main{padding:20px 20px 120px}
+.dayhead{font-size:22px;margin-bottom:6px}
+.legend{display:flex;gap:16px;font-size:13px;color:var(--muted);margin-bottom:14px}
+.legend span{display:flex;align-items:center;gap:6px}
+.dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;background:var(--blue)}
+.dot.o{background:var(--orange)}
+.list{display:flex;flex-direction:column;gap:10px}
+.item{width:100%;text-align:left;border:0;background:var(--card);border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:14px;color:var(--ink)}
+.item.act{background:var(--orange-soft)}
+.item .txt{display:flex;flex-direction:column;gap:2px;flex-grow:1;min-width:0}
+.item .t{font-size:17px;font-weight:600}
+.item .m{font-size:14px;color:var(--muted)}
+.tag{font-size:12px;font-weight:600;background:#fff;border-radius:10px;padding:4px 8px;white-space:nowrap}
+.empty{background:var(--card);border-radius:16px;padding:18px;color:var(--muted)}
+.note{background:var(--card);border-radius:16px;padding:14px 16px;margin-bottom:14px;color:var(--ink)}
+
+.fab{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));width:min(520px,calc(100% - 40px));height:60px;border:0;border-radius:30px;background:var(--orange);color:var(--blue);font-weight:700;font-size:19px;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 6px 18px rgba(19,41,75,.25);z-index:5}
+
+/* sheets */
+.scrim{position:fixed;inset:0;background:rgba(19,41,75,.55);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:#fff;width:100%;max-width:560px;max-height:92vh;overflow:auto;border-radius:24px 24px 0 0;padding:22px 20px calc(24px + env(safe-area-inset-bottom,0px))}
+.sheethead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+.sheethead h2{font-size:26px}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+.field label,.flabel{font-size:15px;font-weight:700}
+.hint{font-size:13px;color:var(--muted)}
+input[type=text],input[type=email],input[type=password],input[type=url],input[type=date],select,textarea{width:100%;min-height:52px;border:1.5px solid var(--line);border-radius:14px;padding:0 14px;background:#fff;font-size:17px}
+textarea{padding:12px 14px;min-height:80px;resize:vertical}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{min-height:44px;padding:0 16px;border-radius:22px;border:1.5px solid var(--line);background:#fff;font-size:16px;font-weight:500}
+.chip[aria-pressed="true"]{background:var(--orange);border-color:var(--orange);color:var(--blue);font-weight:700}
+.btn{min-height:54px;border-radius:27px;border:0;background:var(--orange);color:var(--blue);font-weight:700;font-size:18px;padding:0 22px;width:100%}
+.btn.ghost{background:transparent;border:2px solid var(--blue);color:var(--blue)}
+.btn.small{min-height:44px;font-size:15px;width:auto;padding:0 16px}
+.btn:disabled{opacity:.55;cursor:default}
+.err{color:var(--danger);font-size:14px;font-weight:600;min-height:1em}
+
+.detailbox{background:var(--ground);border-radius:16px;padding:16px;margin-bottom:12px}
+.flab{font-size:13px;font-weight:600;color:var(--muted);margin-bottom:4px}
+.fval{font-size:18px}
+.term{border:0;background:var(--orange-soft);color:var(--blue);font-weight:700;padding:1px 7px;border-radius:7px;text-decoration:underline;font-size:inherit}
+.defn{background:var(--blue);color:#fff;border-radius:14px;padding:12px 14px;margin-top:10px}
+.defn b{display:block;margin-bottom:2px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.idea{background:var(--orange-soft);border-radius:16px;padding:14px 16px;margin-top:12px;font-size:15px}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom,0px));background:var(--blue);color:#fff;padding:12px 18px;border-radius:24px;font-weight:600;z-index:30}
+
+/* trainer */
+.panel{background:var(--card);border-radius:18px;padding:16px;margin-bottom:14px}
+.panel h3{font-size:18px;margin-bottom:10px}
+.rowflex{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.rowflex > *{flex:1 1 auto}
+.linkbox{font-size:13px;color:var(--muted);word-break:break-all;background:var(--ground);border-radius:10px;padding:10px;margin:8px 0}
+.exrow{display:flex;align-items:center;gap:10px;background:var(--ground);border-radius:14px;padding:12px 14px}
+.exrow .txt{flex-grow:1;min-width:0}
+.linkbtn{border:0;background:none;color:var(--blue);font-weight:600;text-decoration:underline;padding:8px 6px;min-height:44px}
+.linkbtn.danger{color:var(--danger)}
+.signin{min-height:100vh;background:var(--blue);color:#fff;display:flex;flex-direction:column;align-items:center;padding:64px 24px 32px}
+.signin h1{font-size:32px;margin-top:24px;text-align:center}
+.signin .card{margin-top:auto;width:100%;max-width:420px;background:#fff;color:var(--ink);border-radius:24px;padding:24px}
+.signin .card h2{font-size:22px;margin-bottom:12px}
+@media (prefers-reduced-motion: no-preference){
+  .sheet{animation:up .22s ease-out}
+  @keyframes up{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* ---------- Settings ---------- */
+const SUPABASE_URL = 'https://vgtsrnxrnejqspfayuic.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZndHNybnhybmVqcXNwZmF5dWljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ2MTIzMjEsImV4cCI6MjExMDE4ODMyMX0.adBUDaaRsq_L_cUSP57UX4H6QxxJ_BdJWkeOZ8_ZJOc'; // public key, safe to share
+const LOGO_URL = ''; // logo goes here once it's added
+const BUSINESS = 'Brolic City Fitness';
+
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const app = document.getElementById('app');
+const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const DAYS_LONG = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+
+/* ---------- Helpers ---------- */
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad = n => String(n).padStart(2,'0');
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const parseYmd = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); };
+const addDays = (d,n) => { const x = new Date(d); x.setDate(x.getDate()+n); return x; };
+const mondayOf = d => { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); const wd = (x.getDay()+6)%7; return addDays(x, -wd); };
+const dayIndex = d => (d.getDay()+6)%7; // 0 = Monday
+const shortDate = d => d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+const logoHtml = (big) => `<div class="logo${big?' big':''}" aria-hidden="true">${LOGO_URL ? `<img src="${esc(LOGO_URL)}" alt="">` : 'BCF'}</div>`;
+const icon = {
+  left:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>',
+  right:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>',
+  plus:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
+  close:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  play:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linejoin="round" aria-hidden="true"><path d="M7 5l12 7-12 7z"/></svg>'
+};
+function toast(msg){
+  const t = document.createElement('div'); t.className='toast'; t.setAttribute('role','status'); t.textContent = msg;
+  document.body.appendChild(t); setTimeout(()=>t.remove(), 2200);
+}
+function openSheet(html){
+  closeSheet();
+  const s = document.createElement('div'); s.className='scrim'; s.id='scrim';
+  s.innerHTML = `<div class="sheet" role="dialog" aria-modal="true">${html}</div>`;
+  s.addEventListener('click', e => { if (e.target === s) closeSheet(); });
+  document.body.appendChild(s);
+  const f = s.querySelector('input,button'); if (f) f.focus();
+  return s;
+}
+function closeSheet(){ const s = document.getElementById('scrim'); if (s) s.remove(); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
+function safeUrl(u){ try { const x = new URL(u); return (x.protocol==='https:'||x.protocol==='http:') ? x.href : ''; } catch { return ''; } }
+
+/* Turn joint-action words in Why/Action into tappable terms */
+function linkTerms(text, vocab){
+  const terms = Object.keys(vocab||{}).sort((a,b)=>b.length-a.length);
+  if (!terms.length) return esc(text);
+  const re = new RegExp('\\b(' + terms.map(t=>t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|') + ')\\b','gi');
+  let out = '', last = 0, m;
+  while ((m = re.exec(text))){
+    out += esc(text.slice(last, m.index));
+    out += `<button type="button" class="term" data-term="${esc(m[1].toLowerCase())}">${esc(m[1])}</button>`;
+    last = m.index + m[1].length;
+  }
+  return out + esc(text.slice(last));
+}
+
+/* ======================================================
+   PATRON VIEW  (opened from a private link: ?p=CODE)
+   ====================================================== */
+const P = { token:null, week:mondayOf(new Date()), day:dayIndex(new Date()), data:null };
+
+async function patronLoad(){
+  const { data, error } = await sb.rpc('get_patron_page', { p_token: P.token, p_week_start: ymd(P.week) });
+  if (error){
+    app.innerHTML = `<div class="signin"><div aria-hidden="true">${logoHtml(true)}</div><h1>${BUSINESS}</h1>
+      <div class="card"><h2>This link isn't working</h2><p>It may have been replaced with a new one. Ask your trainer for your current link.</p></div></div>`;
+    return;
+  }
+  P.data = data; patronRender();
+}
+
+function patronRender(){
+  const d = P.data, weekEnd = addDays(P.week,6);
+  const exDays = new Set(d.exercises.map(e=>e.day-1));
+  const actDays = new Set(d.activities.map(a=>dayIndex(parseYmd(a.performed_on))));
+  const dayEx = d.exercises.filter(e => e.day-1 === P.day);
+  const dayDate = addDays(P.week, P.day);
+  const dayActs = d.activities.filter(a => a.performed_on === ymd(dayDate));
+  const isThisWeek = ymd(P.week) === ymd(mondayOf(new Date()));
+  app.innerHTML = `
+  <header class="top"><div class="wrap">
+    <div class="row">${logoHtml()}<div><div class="hello">Hi, ${esc(d.first_name)}</div><div class="sub">${BUSINESS}</div></div></div>
+    <div class="weeknav">
+      <button class="iconbtn" id="prevW" aria-label="Previous week">${icon.left}</button>
+      <div class="weeklabel">${isThisWeek ? 'This week' : 'Week of ' + shortDate(P.week)}<div class="sub">${shortDate(P.week)} to ${shortDate(weekEnd)}</div></div>
+      <button class="iconbtn" id="nextW" aria-label="Next week">${icon.right}</button>
+    </div>
+    <div class="days" role="group" aria-label="Day of the week">
+      ${DAYS.map((n,i)=>`<button class="day" data-day="${i}" aria-pressed="${i===P.day}" aria-label="${DAYS_LONG[i]} ${shortDate(addDays(P.week,i))}"><small>${n}</small><b>${addDays(P.week,i).getDate()}</b>${(exDays.has(i)||actDays.has(i))?'<span class="pip"></span>':''}</button>`).join('')}
+    </div>
+  </div></header>
+  <main class="wrap">
+    <h2 class="dayhead">${DAYS_LONG[P.day]}, ${shortDate(dayDate)}</h2>
+    <div class="legend"><span><span class="dot"></span>Training plan</span><span><span class="dot o"></span>My activity</span></div>
+    ${d.notes && P.day===0 ? `<div class="note">${esc(d.notes)}</div>` : ''}
+    <div class="list">
+      ${dayEx.map((e,i)=>`<button class="item" data-ex="${d.exercises.indexOf(e)}"><span class="dot"></span><span class="txt"><span class="t">${esc(e.what)}</span><span class="m">${esc([e.type_time,e.eq].filter(Boolean).join(', '))}</span></span>${icon.right}</button>`).join('')}
+      ${dayActs.map(a=>`<div class="item act"><span class="dot o"></span><span class="txt"><span class="t">${esc(a.activity)}</span><span class="m">${esc([a.action,a.duration].filter(Boolean).join(', '))}</span></span><span class="tag">You logged</span></div>`).join('')}
+      ${(!dayEx.length && !dayActs.length) ? `<div class="empty">Nothing on the plan for this day. Did you move anyway? Tap Add activity.</div>` : ''}
+    </div>
+  </main>
+  <button class="fab" id="addAct">${icon.plus} Add activity</button>`;
+
+  document.getElementById('prevW').onclick = () => { P.week = addDays(P.week,-7); patronLoad(); };
+  document.getElementById('nextW').onclick = () => { P.week = addDays(P.week,7); patronLoad(); };
+  app.querySelectorAll('.day').forEach(b => b.onclick = () => { P.day = +b.dataset.day; patronRender(); });
+  app.querySelectorAll('[data-ex]').forEach(b => b.onclick = () => showExercise(d.exercises[+b.dataset.ex], d.joint_actions));
+  document.getElementById('addAct').onclick = addActivitySheet;
+}
+
+function showExercise(e, vocab){
+  const s = openSheet(`
+    <div class="sheethead"><h2>${esc(e.what)}</h2><button class="iconbtn light" data-close aria-label="Close">${icon.close}</button></div>
+    ${e.why_action ? `<div class="detailbox"><div class="flab">Why/Action</div><div class="fval">${linkTerms(e.why_action, vocab)}</div><div id="defn"></div></div>` : ''}
+    <div class="grid2">
+      <div class="detailbox"><div class="flab">Type/Time</div><div class="fval">${esc(e.type_time || 'Ask your trainer')}</div></div>
+      <div class="detailbox"><div class="flab">EQ</div><div class="fval">${esc(e.eq || 'None')}</div></div>
+    </div>
+    ${safeUrl(e.video_url) ? `<a class="btn ghost" style="display:flex;align-items:center;justify-content:center;gap:10px;text-decoration:none" href="${esc(safeUrl(e.video_url))}" target="_blank" rel="noopener">${icon.play} Watch how</a>` : ''}
+    <div class="idea">Know what the muscle does. Then put it into that action, rep after rep.</div>`);
+  s.querySelector('[data-close]').onclick = closeSheet;
+  s.querySelectorAll('.term').forEach(t => t.onclick = () => {
+    const term = t.dataset.term;
+    s.querySelector('#defn').innerHTML = `<div class="defn" role="status"><b>${esc(term.charAt(0).toUpperCase()+term.slice(1))}</b>${esc(vocab[term]||'')}</div>`;
+  });
+}
+
+function addActivitySheet(){
+  const dayDate = addDays(P.week, P.day);
+  const today = ymd(new Date());
+  const startDate = ymd(dayDate) > today ? today : ymd(dayDate);
+  const quick = ['Walk','Yoga','Bike','Swim','Stretch','Run'];
+  const times = ['15 min','30 min','45 min','60 min','90 min'];
+  const s = openSheet(`
+    <div class="sheethead"><h2>Add activity</h2><button class="iconbtn light" data-close aria-label="Close">${icon.close}</button></div>
+    <div class="field"><label for="fAct">Activity</label>
+      <input id="fAct" type="text" maxlength="200" placeholder="What did you do?" autocomplete="off">
+      <div class="chips">${quick.map(q=>`<button type="button" class="chip" data-q="${q}" aria-pressed="false">${q}</button>`).join('')}</div></div>
+    <div class="field"><label for="fAction">Action</label>
+      <input id="fAction" type="text" maxlength="200" placeholder="Like stretching hamstrings" autocomplete="off">
+      <span class="hint">What was your body doing? Optional.</span></div>
+    <div class="field"><label for="fDur">Duration</label>
+      <input id="fDur" type="text" maxlength="100" placeholder="How long?" autocomplete="off">
+      <div class="chips">${times.map(t=>`<button type="button" class="chip" data-t="${t}" aria-pressed="false">${t}</button>`).join('')}</div></div>
+    <div class="field"><label for="fDate">Day</label><input id="fDate" type="date" value="${startDate}" max="${today}"></div>
+    <p class="err" id="fErr" role="alert"></p>
+    <button class="btn" id="fSave">Save activity</button>`);
+  const act = s.querySelector('#fAct'), dur = s.querySelector('#fDur');
+  s.querySelector('[data-close]').onclick = closeSheet;
+  const pick = (attr, input) => s.querySelectorAll(`[data-${attr}]`).forEach(b => b.onclick = () => {
+    s.querySelectorAll(`[data-${attr}]`).forEach(x => x.setAttribute('aria-pressed','false'));
+    b.setAttribute('aria-pressed','true'); input.value = b.dataset[attr];
+  });
+  pick('q', act); pick('t', dur);
+  s.querySelector('#fSave').onclick = async () => {
+    const err = s.querySelector('#fErr'), btn = s.querySelector('#fSave');
+    if (!act.value.trim()){ err.textContent = 'Add what you did to save it.'; act.focus(); return; }
+    btn.disabled = true; btn.textContent = 'Saving';
+    const { error } = await sb.rpc('add_patron_activity', {
+      p_token: P.token, p_activity: act.value.trim(), p_action: s.querySelector('#fAction').value.trim(),
+      p_duration: dur.value.trim(), p_performed_on: s.querySelector('#fDate').value || today
+    });
+    if (error){ err.textContent = 'That didn\u2019t save. Check your connection and try again.'; btn.disabled = false; btn.textContent = 'Save activity'; return; }
+    const saved = parseYmd(s.querySelector('#fDate').value || today);
+    P.week = mondayOf(saved); P.day = dayIndex(saved);
+    closeSheet(); toast('Activity saved'); patronLoad();
+  };
+}
+
+/* ======================================================
+   TRAINER VIEW  (the page with no ?p= code)
+   ====================================================== */
+const T = { patrons:[], patronId:null, week:mondayOf(new Date()), day:dayIndex(new Date()), weekRow:null, exercises:[], acts:[], vocab:[] };
+
+async function trainerStart(){
+  const { data:{ session } } = await sb.auth.getSession();
+  if (!session) return renderSignIn();
+  const { data: ok } = await sb.rpc('is_trainer');
+  if (!ok){
+    app.innerHTML = `<div class="signin">${logoHtml(true)}<h1>${BUSINESS}</h1><div class="card"><h2>Not set up as trainer yet</h2>
+      <p>You're signed in as ${esc(session.user.email)}, but this account doesn't have trainer access yet.</p>
+      <button class="btn ghost" id="out">Sign out</button></div></div>`;
+    document.getElementById('out').onclick = async () => { await sb.auth.signOut(); renderSignIn(); };
+    return;
+  }
+  const v = await sb.from('joint_actions').select('term'); T.vocab = (v.data||[]).map(r=>r.term);
+  await loadPatrons(); renderTrainer();
+}
+
+function renderSignIn(){
+  app.innerHTML = `<div class="signin">${logoHtml(true)}<h1>${BUSINESS}</h1><div class="sub" style="margin-top:6px">Trainer sign in</div>
+    <form class="card" id="si"><h2>Welcome back</h2>
+      <div class="field"><label for="em">Email</label><input id="em" type="email" autocomplete="username" required></div>
+      <div class="field"><label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password" required></div>
+      <p class="err" id="siErr" role="alert"></p>
+      <button class="btn" type="submit" id="siBtn">Sign in</button>
+    </form></div>`;
+  document.getElementById('si').onsubmit = async ev => {
+    ev.preventDefault();
+    const btn = document.getElementById('siBtn'); btn.disabled = true;
+    const { error } = await sb.auth.signInWithPassword({ email: document.getElementById('em').value.trim(), password: document.getElementById('pw').value });
+    btn.disabled = false;
+    if (error){ document.getElementById('siErr').textContent = 'That email and password didn\u2019t match. Try again.'; return; }
+    trainerStart();
+  };
+}
+
+async function loadPatrons(){
+  const { data } = await sb.from('patrons').select('*').order('full_name');
+  T.patrons = data || [];
+  if (!T.patronId && T.patrons.length) T.patronId = T.patrons[0].id;
+  await loadWeek();
+}
+
+async function loadWeek(){
+  T.weekRow = null; T.exercises = []; T.acts = [];
+  if (!T.patronId) return;
+  const wk = ymd(T.week);
+  const w = await sb.from('plan_weeks').select('*').eq('patron_id', T.patronId).eq('week_start', wk).maybeSingle();
+  T.weekRow = w.data || null;
+  if (T.weekRow){
+    const e = await sb.from('plan_exercises').select('*').eq('week_id', T.weekRow.id).order('day_of_week').order('position');
+    T.exercises = e.data || [];
+  }
+  const a = await sb.from('activity_logs').select('*').eq('patron_id', T.patronId).gte('performed_on', wk).lte('performed_on', ymd(addDays(T.week,6))).order('performed_on');
+  T.acts = a.data || [];
+}
+
+const patronLink = p => `${location.origin}${location.pathname}?p=${p.link_token}`;
+
+function renderTrainer(){
+  const p = T.patrons.find(x => x.id === T.patronId);
+  const dayEx = T.exercises.filter(e => e.day_of_week-1 === T.day);
+  app.innerHTML = `
+  <header class="top"><div class="wrap">
+    <div class="row" style="justify-content:space-between"><div class="row">${logoHtml()}<div><div class="hello" style="font-size:22px">Trainer</div><div class="sub">Only you see this page</div></div></div>
+    <button class="btn small ghost" id="out" style="border-color:#fff;color:#fff">Sign out</button></div>
+  </div></header>
+  <main class="wrap" style="padding-bottom:40px">
+    <section class="panel"><h3>Patron</h3>
+      ${T.patrons.length ? `<label class="hint" for="pSel">Pick a patron</label>
+        <select id="pSel">${T.patrons.map(x=>`<option value="${x.id}" ${x.id===T.patronId?'selected':''}>${esc(x.full_name)}</option>`).join('')}</select>` : `<p class="hint">Add your first patron to start a plan.</p>`}
+      <div class="rowflex" style="margin-top:10px"><input id="newName" type="text" placeholder="New patron name" aria-label="New patron name"><button class="btn small" id="addP">Add patron</button></div>
+      ${p ? `<div class="linkbox">${esc(patronLink(p))}</div>
+        <div class="rowflex"><button class="btn small" id="copyL">Copy their link</button><a class="btn small ghost" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none" href="${esc(patronLink(p))}" target="_blank" rel="noopener">See their page</a><button class="linkbtn danger" id="newL">Make a new link</button></div>` : ''}
+    </section>
+    ${p ? `
+    <section class="panel">
+      <div class="weeknav" style="margin:0 0 12px">
+        <button class="iconbtn light" id="prevW" aria-label="Previous week">${icon.left}</button>
+        <div class="weeklabel">Week of ${shortDate(T.week)}</div>
+        <button class="iconbtn light" id="nextW" aria-label="Next week">${icon.right}</button>
+      </div>
+      <button class="btn small" id="copyW" style="width:100%">Copy last week</button>
+      <div class="days" style="margin-top:12px" role="group" aria-label="Day">
+        ${DAYS.map((n,i)=>`<button class="day" style="border-color:var(--line);color:var(--ink)" data-day="${i}" aria-pressed="${i===T.day}"><small style="color:var(--muted)">${n}</small><b>${addDays(T.week,i).getDate()}</b>${T.exercises.some(e=>e.day_of_week-1===i)?'<span class="pip" style="background:var(--muted)"></span>':''}</button>`).join('')}
+      </div>
+    </section>
+    <section class="panel"><h3>${DAYS_LONG[T.day]} plan</h3>
+      <div class="list">
+        ${dayEx.map(e=>`<div class="exrow"><span class="txt"><span class="t" style="font-weight:600;display:block">${esc(e.what)}</span><span class="hint">${esc([e.why_action,e.type_time,e.eq].filter(Boolean).join(', '))}</span></span>
+          <button class="linkbtn" data-edit="${e.id}">Edit</button><button class="linkbtn danger" data-del="${e.id}">Delete</button></div>`).join('') || '<p class="hint">No exercises on this day yet.</p>'}
+      </div>
+      <button class="btn ghost" id="addEx" style="margin-top:12px">Add exercise</button>
+    </section>
+    <section class="panel"><h3>Week notes</h3>
+      <textarea id="notes" placeholder="Shows at the top of Monday on their page">${esc(T.weekRow?.notes || '')}</textarea>
+      <button class="btn small" id="saveNotes" style="margin-top:8px">Save notes</button>
+    </section>
+    <section class="panel"><h3>Their activity this week</h3>
+      <div class="list">
+        ${T.acts.map(a=>`<div class="exrow" style="background:var(--orange-soft)"><span class="txt"><span style="font-weight:600;display:block">${esc(a.activity)}</span><span class="hint">${esc([shortDate(parseYmd(a.performed_on)), a.action, a.duration].filter(Boolean).join(', '))}${a.logged_by==='trainer'?' (added by you)':''}</span></span><button class="linkbtn danger" data-delact="${a.id}">Delete</button></div>`).join('') || '<p class="hint">Nothing logged yet this week.</p>'}
+      </div>
+      <button class="btn ghost" id="addTA" style="margin-top:12px">Add activity for them</button>
+    </section>` : ''}
+  </main>`;
+
+  document.getElementById('out').onclick = async () => { await sb.auth.signOut(); renderSignIn(); };
+  document.getElementById('addP').onclick = async () => {
+    const n = document.getElementById('newName').value.trim(); if (!n) return;
+    const { data, error } = await sb.from('patrons').insert({ full_name:n }).select().single();
+    if (error) return toast('Couldn\u2019t add patron');
+    T.patronId = data.id; await loadPatrons(); renderTrainer(); toast('Patron added');
+  };
+  if (!p) return;
+  document.getElementById('pSel').onchange = async ev => { T.patronId = ev.target.value; await loadWeek(); renderTrainer(); };
+  document.getElementById('copyL').onclick = async () => { try { await navigator.clipboard.writeText(patronLink(p)); toast('Link copied'); } catch { toast('Press and hold the link to copy it'); } };
+  document.getElementById('newL').onclick = async () => {
+    if (!confirm(`Make a new link for ${p.full_name}? Their old link will stop working.`)) return;
+    const { error } = await sb.rpc('new_patron_link', { p_patron: p.id });
+    if (error) return toast('Couldn\u2019t make a new link');
+    await loadPatrons(); renderTrainer(); toast('New link made');
+  };
+  document.getElementById('prevW').onclick = async () => { T.week = addDays(T.week,-7); await loadWeek(); renderTrainer(); };
+  document.getElementById('nextW').onclick = async () => { T.week = addDays(T.week,7); await loadWeek(); renderTrainer(); };
+  document.getElementById('copyW').onclick = async () => {
+    if (T.exercises.length && !confirm('This week already has exercises. Copy last week\u2019s plan in as well?')) return;
+    const { error } = await sb.rpc('copy_last_week', { p_patron: p.id, p_week_start: ymd(T.week) });
+    if (error) return toast(error.message.includes('No earlier') ? 'No earlier week to copy' : 'Couldn\u2019t copy the week');
+    await loadWeek(); renderTrainer(); toast('Last week copied');
+  };
+  app.querySelectorAll('.day').forEach(b => b.onclick = () => { T.day = +b.dataset.day; renderTrainer(); });
+  document.getElementById('addEx').onclick = () => exerciseSheet(null);
+  app.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => exerciseSheet(T.exercises.find(e=>e.id===b.dataset.edit)));
+  app.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
+    if (!confirm('Delete this exercise?')) return;
+    await sb.from('plan_exercises').delete().eq('id', b.dataset.del); await loadWeek(); renderTrainer(); toast('Exercise deleted');
+  });
+  app.querySelectorAll('[data-delact]').forEach(b => b.onclick = async () => {
+    if (!confirm('Delete this activity?')) return;
+    await sb.from('activity_logs').delete().eq('id', b.dataset.delact); await loadWeek(); renderTrainer(); toast('Activity deleted');
+  });
+  document.getElementById('saveNotes').onclick = async () => {
+    const wk = await ensureWeek(); if (!wk) return;
+    await sb.from('plan_weeks').update({ notes: document.getElementById('notes').value.trim() || null }).eq('id', wk.id);
+    await loadWeek(); toast('Notes saved');
+  };
+  document.getElementById('addTA').onclick = trainerActivitySheet;
+}
+
+async function ensureWeek(){
+  if (T.weekRow) return T.weekRow;
+  const { data, error } = await sb.from('plan_weeks').upsert({ patron_id:T.patronId, week_start:ymd(T.week) }, { onConflict:'patron_id,week_start' }).select().single();
+  if (error){ toast('Couldn\u2019t start this week'); return null; }
+  T.weekRow = data; return data;
+}
+
+function exerciseSheet(ex){
+  const s = openSheet(`
+    <div class="sheethead"><h2>${ex ? 'Edit exercise' : 'Add exercise'}</h2><button class="iconbtn light" data-close aria-label="Close">${icon.close}</button></div>
+    <p class="hint" style="margin:-8px 0 14px">${DAYS_LONG[T.day]}, week of ${shortDate(T.week)}</p>
+    <div class="field"><label for="eWhat">What</label><input id="eWhat" type="text" value="${esc(ex?.what||'')}" placeholder="Dumbbell curl"></div>
+    <div class="field"><label for="eWhy">Why/Action</label><input id="eWhy" type="text" list="actList" value="${esc(ex?.why_action||'')}" placeholder="Biceps: flexion at the elbow">
+      <span class="hint">Action words like ${T.vocab.slice(0,4).join(', ')} become tappable definitions on their page.</span>
+      <datalist id="actList">${T.vocab.map(v=>`<option value="${esc(v)}">`).join('')}</datalist></div>
+    <div class="grid2">
+      <div class="field"><label for="eType">Type/Time</label><input id="eType" type="text" value="${esc(ex?.type_time||'')}" placeholder="3 x 10"></div>
+      <div class="field"><label for="eEq">EQ</label><input id="eEq" type="text" value="${esc(ex?.eq||'')}" placeholder="Dumbbells"></div>
+    </div>
+    <div class="field"><label for="eVid">Video link</label><input id="eVid" type="url" value="${esc(ex?.video_url||'')}" placeholder="Paste a link"></div>
+    <p class="err" id="eErr" role="alert"></p>
+    <button class="btn" id="eSave">${ex ? 'Save changes' : 'Add exercise'}</button>`);
+  s.querySelector('[data-close]').onclick = closeSheet;
+  s.querySelector('#eSave').onclick = async () => {
+    const what = s.querySelector('#eWhat').value.trim();
+    if (!what){ s.querySelector('#eErr').textContent = 'Add the exercise name.'; return; }
+    const row = { what, why_action: s.querySelector('#eWhy').value.trim()||null, type_time: s.querySelector('#eType').value.trim()||null,
+      eq: s.querySelector('#eEq').value.trim()||null, video_url: s.querySelector('#eVid').value.trim()||null };
+    let error;
+    if (ex){ ({ error } = await sb.from('plan_exercises').update(row).eq('id', ex.id)); }
+    else {
+      const wk = await ensureWeek(); if (!wk) return;
+      const pos = T.exercises.filter(e=>e.day_of_week-1===T.day).length;
+      ({ error } = await sb.from('plan_exercises').insert({ ...row, week_id: wk.id, day_of_week: T.day+1, position: pos }));
+    }
+    if (error){ s.querySelector('#eErr').textContent = 'That didn\u2019t save. Try again.'; return; }
+    closeSheet(); await loadWeek(); renderTrainer(); toast(ex ? 'Changes saved' : 'Exercise added');
+  };
+}
+
+function trainerActivitySheet(){
+  const today = ymd(new Date());
+  const def = ymd(addDays(T.week, T.day));
+  const s = openSheet(`
+    <div class="sheethead"><h2>Add activity for them</h2><button class="iconbtn light" data-close aria-label="Close">${icon.close}</button></div>
+    <div class="field"><label for="aAct">Activity</label><input id="aAct" type="text" maxlength="200" placeholder="Yoga"></div>
+    <div class="field"><label for="aAction">Action</label><input id="aAction" type="text" maxlength="200" placeholder="Stretching hamstrings"></div>
+    <div class="field"><label for="aDur">Duration</label><input id="aDur" type="text" maxlength="100" placeholder="30 min"></div>
+    <div class="field"><label for="aDate">Day</label><input id="aDate" type="date" value="${def > today ? today : def}"></div>
+    <p class="err" id="aErr" role="alert"></p>
+    <button class="btn" id="aSave">Save activity</button>`);
+  s.querySelector('[data-close]').onclick = closeSheet;
+  s.querySelector('#aSave').onclick = async () => {
+    const activity = s.querySelector('#aAct').value.trim();
+    if (!activity){ s.querySelector('#aErr').textContent = 'Add the activity.'; return; }
+    const { error } = await sb.from('activity_logs').insert({ patron_id:T.patronId, activity, action: s.querySelector('#aAction').value.trim()||null,
+      duration: s.querySelector('#aDur').value.trim()||null, performed_on: s.querySelector('#aDate').value || today, logged_by:'trainer' });
+    if (error){ s.querySelector('#aErr').textContent = 'That didn\u2019t save. Try again.'; return; }
+    closeSheet(); await loadWeek(); renderTrainer(); toast('Activity saved');
+  };
+}
+
+/* ---------- Start ---------- */
+const params = new URLSearchParams(location.search);
+P.token = params.get('p');
+if (P.token) { document.title = BUSINESS; patronLoad(); } else { trainerStart(); }
+</script>
+</body>
+</html>
